@@ -23,6 +23,19 @@ Choose device:
 [2] Pixel_6_API_30
 $ 0
 Pixel_3_XL_API_30 emulator is being started...
+~~
+Devices before emulator start:
+
+Devices after emulator start:
+emulator-5554
+New devices:
+emulator-5554
+Found new device, connecting to emulator-5554
+spawn telnet localhost 5554
+Android Console: Authentication required
+'/home/kekulta/.emulator_console_auth_token'
+auth <your_token_will_be_here>
+OK
 ```
 You can exit from dialog with ```quit``` or ```exit```.
 ```console
