@@ -1,0 +1,118 @@
+#!/usr/bin/bash
+#
+
+token_file="$HOME/.emulator_console_auth_token"
+
+e_names="$(emulator -list-avds)"
+e_names=($e_names)
+re='^[0-9]+$'
+
+find_devices() {
+    local -n devices=$1
+
+    index=0
+
+    for device in $(adb devices | grep -v "List" | awk '{print $1}')
+    do 
+        devices[index]="$device"
+        ((index++))
+    done  
+}
+
+while getopts vwa: flag
+do
+    case "${flag}" in
+        v) verbose=true;;
+        w) wipe_data=true;;
+        a) arguments=${OPTARG};;
+        *) echo "Unknown flag."
+    esac
+done
+
+
+if [ ${#e_names[@]} -eq 0 ]; then
+    echo "No available devices. Create AVD first!"
+    exit
+fi
+
+if ! test -f "$token_file"; then
+    echo "There is no auth token file at $token_file. Create this file first!"
+    exit
+fi
+
+token=$(cat .emulator_console_auth_token)
+
+echo "Choose device:"
+for index in ${!e_names[*]}
+do
+    printf "[%d] %s\n" "$index" "${e_names[$index]}"
+done
+
+
+
+for (( ; ; ))
+do
+    read -r input
+
+    if [ "$input" = "quit" ]; then
+        echo "Goodbye!"
+        kill %- &> /dev/null 
+        exit
+    fi
+
+    if ! [[ $input =~ $re ]] ; then
+        echo "error: Not a number" >&2
+        continue
+    fi
+
+    top=$(("${#e_names[@]}"-1))
+    if [ "$input" -gt "$top" ] || [ "$input" -lt 0 ]; then
+        echo "error: Not in the range."
+        continue
+    fi
+
+    echo "${e_names[$input]} emulator is being started..."
+
+    break
+done
+
+
+find_devices devices_before
+
+if [ "$wipe_data" = true ]; then
+    wipe_command="-wipe-data "
+fi
+
+emulator_command="emulator -avd ${e_names[$input]} $wipe_command$arguments"
+
+if [ "$verbose" = true ]; then
+    eval "$emulator_command" &
+else
+    eval "$emulator_command" > /dev/null &
+fi
+
+sleep 2 
+
+find_devices devices_after
+
+devices_diff=($(comm -3 <(printf "%s\n" "${devices_before[@]}" | sort) <(printf "%s\n" "${devices_after[@]}" | sort) | sort -n))
+
+echo "Devices before emulator start:"
+echo "${devices_before[@]}"
+echo "Devices after emulator start:"
+echo "${devices_after[@]}"
+echo "New devices:"
+echo "${devices_diff[@]}"
+
+case "${#devices_diff[@]}" in
+    1)
+        prefix="emulator-"
+        device="${devices_diff[0]}"
+        port=${device#"$prefix"}
+        echo "Found new device, connecting to emulator-$port"
+        expect -c "spawn telnet localhost $port; expect \"OK\"; send \"auth $token\n\"; interact;"
+        ;;
+    0) echo "No new devices, unnable to connect.";;
+    *) echo "More than one new device, connect manually!";;
+esac
+
