@@ -33,7 +33,6 @@ emulator-5554
 Found new device, connecting to emulator-5554
 spawn telnet localhost 5554
 Android Console: Authentication required
-'/home/kekulta/.emulator_console_auth_token'
 auth <your_token_will_be_here>
 OK
 ```
