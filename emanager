@@ -40,7 +40,7 @@ if ! test -f "$token_file"; then
     exit
 fi
 
-token=$(cat .emulator_console_auth_token)
+token=$(cat "$token_file")
 
 echo "Choose device:"
 for index in ${!e_names[*]}
@@ -54,7 +54,7 @@ for (( ; ; ))
 do
     read -r input
 
-    if [ "$input" = "quit" ]; then
+    if [ "$input" = "quit" ] || [ "$input" = "exit" ]; then
         echo "Goodbye!"
         kill %- &> /dev/null 
         exit
